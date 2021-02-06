@@ -1,2 +1,4 @@
 ---
 # tasks file for install_node
+- name: run join command
+  shell: "{{ join }}"

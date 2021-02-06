@@ -1,10 +1,17 @@
-#- hosts: master-node
-#  become: yes
-#  remote_user: benjamin
-#  roles:
-#    - prepare_nodes
+- hosts: 
+    - master-node
+    - worker-node
+  become: yes
+  remote_user: benjamin
+  roles:
+    - prepare_nodes
 - hosts: master-node
   become: yes
   remote_user: benjamin
   roles:
     - install_master
+- hosts: worker-node
+  become: yes
+  remote_user: benjamin
+  roles:
+    - install_node
