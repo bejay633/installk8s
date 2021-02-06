@@ -8,10 +8,14 @@
 - hosts: master-node
   become: yes
   remote_user: benjamin
+  gather_facts: true
   roles:
     - install_master
-- hosts: worker-node
+- hosts:
+    - master-node
+    - worker-node
   become: yes
   remote_user: benjamin
+  gather_facts: true
   roles:
     - install_node

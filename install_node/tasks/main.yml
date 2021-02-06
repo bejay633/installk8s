@@ -1,4 +1,16 @@
 ---
 # tasks file for install_node
-- name: run join command
-  shell: "{{ join }}"
+- name: Get join command for worker node
+  shell: kubeadm token create --print-join-command --ttl 0
+  register: join
+  when: inventory_hostname == "{{ groups['master-node'][0] }}"
+
+- name: register working node
+  systemd:
+    name: docker
+    state: restarted
+  when: inventory_hostname == "{{ groups['worker-node'][0] }}"
+
+- name: register working node
+  shell: "{{ join.stdout }}"
+  when: "{{ groups['worker-node'] }}"

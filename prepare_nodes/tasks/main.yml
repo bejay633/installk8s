@@ -69,20 +69,6 @@
     path: /etc/systemd/system/docker.service.d
     state: directory
 
-- name: wheel group exists
-  group:
-    name: wheel
-    state: present
-
-- name: create users for workshop
-  user: 
-    name: "{{  item }}"
-    groups: wheel, docker
-    state: present
-    shell: /bin/bash
-    password: "{{ 'kubernetes_1!' | password_hash('sha512') }}"
-  with_items: "{{ groups['users'] }}"
-
 - name: Start docker
   systemd:
     daemon_reload: yes
