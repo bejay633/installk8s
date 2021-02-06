@@ -1,0 +1,10 @@
+#- hosts: master-node
+#  become: yes
+#  remote_user: benjamin
+#  roles:
+#    - prepare_nodes
+- hosts: master-node
+  become: yes
+  remote_user: benjamin
+  roles:
+    - install_master

@@ -1,0 +1,3 @@
+---
+# vars file for install_master
+k8s_version: 1.20.2

@@ -1,0 +1,63 @@
+---
+# tasks file for install_master
+
+- name: remove old config
+  file: 
+    path: /home/{{ item}}/.kube/config
+    state: absent
+  with_items: 
+    - "{{ groups['users'] }}"
+
+- name: reset kubeadm
+  shell: kubeadm reset -f
+
+- name: initiate master node 
+  shell: kubeadm init --kubernetes-version={{ k8s_version }} --ignore-preflight-errors=NumCPU --skip-token-print
+
+- name: initalise kube-config 1/2
+  file: 
+    path: /home/{{ item }}/.kube
+    state: directory
+  with_items: 
+    - "{{ groups['users'] }}"
+
+- name: initalise kube-config 2/2
+  file: 
+    path: /home/{{ item }}/.kube/config
+    state: touch
+  with_items: 
+    - "{{ groups['users'] }}"
+
+- name: read kubelet-config
+  slurp: 
+    src: /etc/kubernetes/admin.conf
+  register: config
+
+- name: apply config to all users
+  lineinfile: 
+    line: "{{ config['content'] | b64decode }}"
+    dest: /home/{{ item}}/.kube/config
+  with_items: 
+    - "{{ groups['users'] }}"
+
+- name: create permission for root 1/4
+    path: /root/.kube/config
+    state: absent
+
+- name: create permission for root 2/4
+  file: 
+    path: /root/.kube
+    state: directory
+
+- name: create permission for root 3/4
+  file: 
+    path: /root/.kube/config
+    state: touch
+
+- name: create permission for root 3/4
+  lineinfile:
+    line: "{{ config['content'] | b64decode }}"
+    dest: /root/.kube/config
+
+- name: apply pod network wave 
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"

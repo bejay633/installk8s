@@ -1,0 +1,96 @@
+---
+# tasks file for prepare_nodes
+- name: Install Dependencies for Kubernetes 1/2
+  apt: 
+    name: '{{ item }}'
+    autoremove: yes
+    state: absent
+  with_items:
+    - docker.io
+    - kubelet
+    - kubeadm
+    - kubectl 
+    - kubernetes-cni
+
+- name: Disable SWAP since kubernetes can't work with swap enabled (1/2)
+  shell: |
+    swapoff -a
+
+- name: Disable SWAP in fstab since kubernetes can't work with swap enabled (2/2)
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Install Dependencies for Kubernetes 2/2
+  apt: 
+    name: '{{ item }}'
+  with_items:
+    - bash-completion
+    - binutils
+    - etcd-client 
+    - vim 
+    - build-essential
+
+- name: wheel group exists
+  group:
+    name: wheel
+    state: present
+
+- name: create users for workshop
+  user: 
+    name: "{{  item }}"
+    groups: wheel, docker
+    state: present
+    shell: /bin/bash
+    password: "{{ 'kubernetes_1!' | password_hash('sha512') }}"
+  with_items: "{{ groups['users'] }}"
+
+- name: install google-key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Adding google-repository to system 1/2
+  file: 
+    path: /etc/apt/sources.list.d/kubernetes.list
+    state: touch
+
+- name: Adding google-repository to system 2/2
+  lineinfile: 
+    path: /etc/apt/sources.list.d/kubernetes.list
+    line: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+
+- name: Install k8s components
+  apt: 
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - docker.io
+    - kubelet={{k8s_version}}-00
+    - kubeadm={{k8s_version}}-00 
+    - kubectl={{k8s_version}}-00 
+    - kubernetes-cni=0.8.7-00
+
+- name: Configure Docker Daemon
+  template: 
+    src: daemon.j2
+    dest: /etc/docker/daemon.json
+
+- name: create systemd directory for docker
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+
+- name: Start docker
+  systemd:
+    daemon_reload: yes
+    name: docker
+    state: restarted
+
+- name: Start kubelet
+  systemd: 
+    name: kubelet
+    enabled: yes
+    state: started 
